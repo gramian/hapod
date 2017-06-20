@@ -1,6 +1,6 @@
 function [svec,sval,snfo] = hapod(data,bound,topo,relax,config,mysvd)
 %%% project: hapod - Hierarchical Approximate POD ( http://git.io/hapod )
-%%% version: 1.2 ( 2017-06-06 )
+%%% version: 1.2 ( 2017-20-06 )
 %%% authors: Christian Himpe ( 0000-0003-2194-6754 ),
 %%%          Stephan Rave ( 0000-0003-0439-7212 )
 %%% license: BSD 2-Clause License ( opensource.org/licenses/BSD-2-Clause )
@@ -51,21 +51,22 @@ function [svec,sval,snfo] = hapod(data,bound,topo,relax,config,mysvd)
 %
 % Further information: <http://git.io/hapod>
 %*
-    if(strcmp(data,'version')), svec = 1.1; return; end;
+    if(strcmp(data,'version')), svec = 1.2; return; end;
 
     if( (nargin<3) || isempty(topo)  ), topo  = 'none'; end;
     if( (nargin<4) || isempty(relax) ), relax = 0.5; end;
     if( nargin<6 ), mysvd = []; end;
 
-    nSets  = size(data,2);
-    nSnapshots  = zeros(nSets,1);
-    nModes = zeros(nSets,1);
-    tNode = zeros(nSets,1);
     scaledBound = bound * sqrt(1.0 - relax^2);
 
     switch(lower(topo))
 
         case 'incr' % Incremental HAPOD
+
+            nSets  = size(data,2);
+            nSnapshots  = zeros(nSets,1);
+            nModes = zeros(nSets,1);
+            tNode = zeros(nSets,1);
 
             leafBase = [];
 
@@ -125,6 +126,11 @@ function [svec,sval,snfo] = hapod(data,bound,topo,relax,config,mysvd)
 
         case 'dist' % Distributed HAPOD
 
+            nSets  = size(data,2);
+            nSnapshots  = zeros(nSets,1);
+            nModes = zeros(nSets,1);
+            tNode = zeros(nSets,1);
+
             leafBases = cell(1,nSets);
 
             for nodeIndex = 1:nSets
@@ -138,16 +144,22 @@ function [svec,sval,snfo] = hapod(data,bound,topo,relax,config,mysvd)
                 tNode(nodeIndex) = toc(tId);
             end
 
+            tId = tic();
             rootBound = sqrt(sum(nSnapshots)) * relax * bound;
             [svec,sval] = pod(leafBases,rootBound,mysvd);
+            tNode(nSets+1) = toc(tId);
             snfo = struct('nSets',nSets,'nSnapshots',nSnapshots,'nModes',nModes,'tNode',tNode);
 
         case 'dist_1' % Distributed HAPOD (One Node Only)
 
-            config.nSnapshots(config.nodeIndex) = nSets;
+            if(iscell(data))
+                config.nSnapshots(config.nodeIndex) = size(data{1},2);
+            else
+                config.nSnapshots(config.nodeIndex) = size(data,2);
+            end
 
             tId = tic();
-            leafBound = sqrt(nSets) * scaledBound;
+            leafBound = sqrt(config.nSnapshots(config.nodeIndex)) * scaledBound;
             [svec,sval] = pod(data,leafBound,mysvd);
             svec = svec.*sval;
             config.nModes = size(svec,2);
@@ -162,6 +174,11 @@ function [svec,sval,snfo] = hapod(data,bound,topo,relax,config,mysvd)
             snfo = struct('nSnapshots',[config.nSnapshots],'nModes',[config.nModes],'tNode',[config.tNode]);
 
         case 'none' % Standard POD
+
+            nSets  = size(data,2);
+            nSnapshots  = zeros(nSets,1);
+            nModes = zeros(nSets,1);
+            tNode = zeros(nSets,1);
 
             tId = tic();
             for nodeIndex = 1:nSets
@@ -191,7 +208,7 @@ function [svec,sval] = pod(data,bound,mysvd)
     d = flipud(cumsum(flipud(D.^2)));
 
     K = find(d <= bound^2,1);
-    if(isempty(K)), K = size(X,2) + 1; end;
+    if(isempty(K)), K = min(size(X)) + 1; end;
     sval = D(1:K-1)';
     svec = U(:,1:K-1);
 end
