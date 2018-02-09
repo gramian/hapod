@@ -1,11 +1,11 @@
 HAPOD - Hierarchical Approximate Proper Orthogonal Decomposition
 ================================================================
 
-* HAPOD - Hierarchical Approximate Proper Orthogonal Decomposition ( http://git.io/hapod )
-* version: 1.2 (2017-20-06)
+* HAPOD - Hierarchical Approximate POD ( http://git.io/hapod )
+* version: 1.3 ( 2018-02-09 )
 * by: Christian Himpe (0000-0003-2194-6754), Stephan Rave (0000-0003-0439-7212)
 * under: BSD 2-Clause License (open-source)
-* summary: 
+* summary: Distributed or incremental POD / SVD computation
 
 # Scope
 
@@ -22,7 +22,7 @@ HAPOD - Hierarchical Approximate Proper Orthogonal Decomposition
 * Standard POD
 * Incremental HAPOD
 * Distributed HAPOD
-* Custom POD backend
+* Custom SVD backend
 
 # Basic Usage
 
@@ -39,7 +39,7 @@ HAPOD - Hierarchical Approximate Proper Orthogonal Decomposition
 ## Return Values
 
 * `data` {cell array} 
-* `bound` {scalar} L2 projection error bound
+* `bound` {scalar} L2 mean projection error bound
 * `topo` {string} HAPOD graph topology
     * `'none'` Standard POD
     * `'incr'` Incremental HAPOD 
@@ -58,12 +58,16 @@ HAPOD - Hierarchical Approximate Proper Orthogonal Decomposition
 
 ## Information and Configuration Structure
 
-## Custom POD Backend
+* `nSnapshots` - Number of data columns passed to this hapod and its children. 
+* `nModes` - Number of intermediate modes
+* `tNode` - computational time at this hapod's branch
 
-## Distributed Memory Parallelization
+## Custom SVD Backend
+
+Signature, arguments and return values as for Matlab's svd function.
 
 # Cite As
 
 C. Himpe, T. Leibner and S. Rave.
-"Hierarchical Approximate Proper Orthogonal Decomposition".
-Preprint, arXiv math.NA: 1607.05210, 2016.
+"[Hierarchical Approximate Proper Orthogonal Decomposition](http://arxiv.org/abs/1607.05210)".
+Preprint, arXiv math.NA: 1607.05210, 2017.

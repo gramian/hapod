@@ -1,14 +1,14 @@
 function [svec,sval,snfo] = hapod(data,bound,topo,relax,config,mysvd)
 %%% project: hapod - Hierarchical Approximate POD ( http://git.io/hapod )
-%%% version: 1.2 ( 2017-20-06 )
-%%% authors: Christian Himpe ( 0000-0003-2194-6754 ),
-%%%          Stephan Rave ( 0000-0003-0439-7212 )
+%%% version: 1.3 ( 2018-02-09 )
+%%% authors: C. Himpe ( 0000-0003-2194-6754 ), S. Rave ( 0000-0003-0439-7212 )
 %%% license: BSD 2-Clause License ( opensource.org/licenses/BSD-2-Clause )
+%%% summary: Distributed or incremental POD / SVD computation
 %
 %% SYNTAX:
 %   [svec,sval,snfo] = hapod(data,bound,topo,relax,config,mysvd)
 %
-%% SUMMARY:
+%% ABOUT:
 %   Compatible with OCTAVE and MATLAB.
 %
 %% ARGUMENTS:
@@ -41,7 +41,7 @@ function [svec,sval,snfo] = hapod(data,bound,topo,relax,config,mysvd)
 %% CITATION:
 %   C. Himpe, T. Leibner and S. Rave.
 %   "Hierarchical Approximate Proper Orthogonal Decomposition".
-%   Preprint, arXiv math.NA: 1607.05210, 2016.
+%   Preprint, arXiv math.NA: 1607.05210, 2018.
 %
 %% SEE ALSO:
 %   svd, svds, princomp
@@ -51,7 +51,7 @@ function [svec,sval,snfo] = hapod(data,bound,topo,relax,config,mysvd)
 %
 % Further information: <http://git.io/hapod>
 %*
-    if(strcmp(data,'version')), svec = 1.2; return; end;
+    if(strcmp(data,'version')), svec = 1.3; return; end;
 
     if( (nargin<3) || isempty(topo)  ), topo  = 'none'; end;
     if( (nargin<4) || isempty(relax) ), relax = 0.5; end;
@@ -153,13 +153,13 @@ function [svec,sval,snfo] = hapod(data,bound,topo,relax,config,mysvd)
         case 'dist_1' % Distributed HAPOD (One Node Only)
 
             if(iscell(data))
-                config.nSnapshots(config.nodeIndex) = size(data{1},2);
+                config.nSnapshots = size(data{1},2);
             else
-                config.nSnapshots(config.nodeIndex) = size(data,2);
+                config.nSnapshots = size(data,2);
             end
 
             tId = tic();
-            leafBound = sqrt(config.nSnapshots(config.nodeIndex)) * scaledBound;
+            leafBound = sqrt(config.nSnapshots) * scaledBound;
             [svec,sval] = pod(data,leafBound,mysvd);
             svec = svec.*sval;
             config.nModes = size(svec,2);
@@ -171,14 +171,13 @@ function [svec,sval,snfo] = hapod(data,bound,topo,relax,config,mysvd)
             tId = tic();
             rootBound = sqrt(sum(config.nSnapshots)) * relax * bound;
             [svec,sval] = pod(data,rootBound,mysvd);
-            snfo = struct('nSnapshots',[config.nSnapshots],'nModes',[config.nModes],'tNode',[config.tNode]);
+            tNode = toc(tId);
+            snfo = struct('nSnapshots',[config.nSnapshots],'nModes',[config.nModes],'tNode',tNode + [config.tNode]);
 
         case 'none' % Standard POD
 
             nSets  = size(data,2);
             nSnapshots  = zeros(nSets,1);
-            nModes = zeros(nSets,1);
-            tNode = zeros(nSets,1);
 
             tId = tic();
             for nodeIndex = 1:nSets
@@ -186,7 +185,8 @@ function [svec,sval,snfo] = hapod(data,bound,topo,relax,config,mysvd)
             end
             [svec,sval] = pod(data,sqrt(sum(nSnapshots)) * bound,mysvd);
             tNode = toc(tId);
-            snfo = [];
+            nModes = size(svec,2);
+            snfo = struct('nSets',nSets,'nSnapshots',nSnapshots,'nModes',nModes,'tNode',tNode);
 
         otherwise
 
@@ -208,7 +208,7 @@ function [svec,sval] = pod(data,bound,mysvd)
     d = flipud(cumsum(flipud(D.^2)));
 
     K = find(d <= bound^2,1);
-    if(isempty(K)), K = min(size(X)) + 1; end;
+    if(isempty(K)), K = size(X,2) + 1; end;
     sval = D(1:K-1)';
     svec = U(:,1:K-1);
 end
