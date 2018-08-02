@@ -48,11 +48,11 @@ function RUNME()
     for k=2:n-1
 
         c1.nodeIndex = k;
-        [u1,d1,c1] = hapod({S{1},u1},E,'incr_1',w,c1);
+        [u1,d1,c1] = hapod({S{k},u1},E,'incr_1',w,c1);
     end
 
     c1.nodeIndex = n;
-    [u1,d1,c1] = hapod({S{1},u1},E,'incr_r',w,c1);
+    [u1,d1,c1] = hapod({S{n},u1},E,'incr_r',w,c1);
 
     iHAPOD_MEAN_L2 = norm(s-U*U'*s,'fro')/sqrt(n*n)
     iHAPOD_MODES = size(U,2)
