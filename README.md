@@ -11,7 +11,7 @@ HAPOD - Hierarchical Approximate Proper Orthogonal Decomposition
 
 * Proper Orthogonal Decomposition (POD)
 * (Truncated) Singular Value Decomposition (SVD)
-* (Sparse) Principal Compoenent Analysis (PCA)
+* (Sparse) Principal Component Analysis (PCA)
 * Empirical Orthogonal Functions (EOF)
 * Empirical Eigenfunctions
 * Karhunen-Loeve Decomposition
