@@ -1,0 +1,17 @@
+Cite As:
+
+C. Himpe, T. Leibner and S. Rave. Hierarchical Approximate Proper Orthogonal Decomposition.
+SIAM Journal on Scientific Computing, 40(5): A3267--A3292, 2018. doi:10.1137/16M1085413
+
+BibTeX Entry:
+
+@ARTICLE{hapod,
+ author = {C. Himpe and T. Leibner and S. Rave},
+ title = {Hierarchical Approximate Proper Orthogonal Decomposition},
+ journal = {SIAM Journal on Scientific Computing},
+ volume = {40},
+ number = {5},
+ pages = {A3267--A3292},
+ year = {2018},
+ doi = {10.1137/16M1085413}
+}

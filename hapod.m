@@ -1,214 +1,224 @@
-function [svec,sval,snfo] = hapod(data,bound,topo,relax,config,mysvd)
-%%% project: hapod - Hierarchical Approximate POD ( http://git.io/hapod )
-%%% version: 1.3 ( 2018-02-09 )
+function [svec,sval,snfo] = hapod(data,bound,type,relax,config,mysvd)
+%%% project: hapod - Hierarchical Approximate POD ( https://git.io/hapod )
+%%% version: 2.0 ( 2019-01-21 )
 %%% authors: C. Himpe ( 0000-0003-2194-6754 ), S. Rave ( 0000-0003-0439-7212 )
 %%% license: BSD 2-Clause License ( opensource.org/licenses/BSD-2-Clause )
 %%% summary: Distributed or incremental POD / SVD computation
 %
-%% SYNTAX:
-%   [svec,sval,snfo] = hapod(data,bound,topo,relax,config,mysvd)
+% SYNTAX:
+%  [svec,sval,snfo] = hapod(data,bound,type,relax,config,mysvd)
 %
-%% ABOUT:
-%   Compatible with OCTAVE and MATLAB.
+% DESCRIPTION:
+%  The hierarhical approximate proper orthogonal decomposition is a tree-based
+%  algorithm to compute low-rank representations of column partitioned data
+%  matrices, of which the special cases of Incremental HAPOD and Distributed
+%  HAPOD are implemented.
 %
-%% ARGUMENTS:
-%     (cell) data   - snapshot data set, partitioned by column (blocks)
-%   (scalar) bound  - mean L_2 projection error bound
-%   (string) topo   - tree topology, default: 'none'
-%                   * 'incr' - incremental HAPOD
-%                   * 'incr_0' - incremental HAPOD
-%                   * 'incr_1' - incremental HAPOD
-%                   * 'incr_r' - incremental HAPOD
-%                   * 'dist' - distributed HAPOD
-%                   * 'dist_1' - distributed HAPOD
-%                   * 'dist_r' - distributed HAPOD
-%                   * 'none' - standard POD
-%   (scalar) relax  - relaxation parameter in (0,1], default: 0.5
-%   (struct) config - partial HAPOD configuration, default: []
-%                   * nSets - number of snapshot sets
-%                   * nSnapshots - vector of data column count per node
-%                   * nModes - vector of mode column count per node
-%                   * nodeIndex - current nodes global index
-%                   * tNode - vector of per node timings
-%   (handle) mysvd  - custom SVD backend, default: []
-%                   * signature: [leftvec,singval] = mysvd(data)
+% ABOUT:
+%  Compatible with OCTAVE and MATLAB.
 %
-%% RETURNS:
-%   (matrix) svec - POD modes of the data
-%   (vector) sval - singular values to the data
-%   (struct) snfo - information structure (nSets, nSnapshots, nModes)
+% ARGUMENTS:
+%    (cell) data   - snapshot data set, partitioned by column (blocks)
+%  (scalar) bound  - mean L_2 projection error bound
+%  (string) type   - tree type, default: 'none'
+%                  * 'incr' - incremental HAPOD
+%                  * 'incr_1' - incremental HAPOD (non-root node)
+%                  * 'incr_r' - incremental HAPOD (root node)
+%                  * 'dist' - distributed HAPOD
+%                  * 'dist_1' - distributed HAPOD (non-root node)
+%                  * 'dist_r' - distributed HAPOD (root node)
+%                  * 'none' - standard POD
+%  (scalar) relax  - relaxation parameter in (0,1], default: 0.5
+%  (struct) config - partial HAPOD configuration, default: {}
+%                  * nLevels - total number of levels in tree
+%                  * nSnapshots - cell array of data column count per node
+%                  * nModes - cell array of mode column count per node
+%                  * tNode - cell array of per node timings
+%  (handle) mysvd  - custom SVD backend, default: []
+%                  * signature: [leftvec,singval] = mysvd(data)
 %
-%% CITATION:
-%   C. Himpe, T. Leibner and S. Rave.
-%   "Hierarchical Approximate Proper Orthogonal Decomposition".
-%   Preprint, arXiv math.NA: 1607.05210, 2018.
+% RETURNS:
+%  (matrix) svec - POD modes of the data
+%  (vector) sval - singular values to the data
+%  (struct) snfo - information structure
 %
-%% SEE ALSO:
-%   svd, svds, princomp
+% USAGE:
+%  If all data partitions can be passed as the data argument, the types: none 
+%  (standard POD), incr(emental) HAPOD or dist(ributed) HAPOD are applicable.
+%  In case only a single partition can be passed, the types: incr_1 and dist_1
+%  should be used for the non-root nodes of the associated HAPOD tree, while 
+%  the types: incr_r and dist_r should be used for the root node. The returned
+%  information structure (or a cell-array thereof) can be passed to the parent
+%  nodes in the associated HAPOD tree. 
 %
-%% KEYWORDS:
-%   POD, BPOD, SVD, tSVD, PCA, MOR, Model Reduction
+% CITATION:
+%  C. Himpe, T. Leibner and S. Rave.
+%  "Hierarchical Approximate Proper Orthogonal Decomposition".
+%  SIAM Journal on Scientific Computing, 40(5): A3267--A3292, 2018.
 %
-% Further information: <http://git.io/hapod>
-%*
-    if(strcmp(data,'version')), svec = 1.3; return; end;
+% SEE ALSO:
+%  svd, svds, princomp
+%
+% KEYWORDS:
+%  POD, BPOD, SVD, PCA, Model Reduction, Dimension Reduction
+%
+% Further information: https://git.io/hapod
 
-    if( (nargin<3) || isempty(topo)  ), topo  = 'none'; end;
-    if( (nargin<4) || isempty(relax) ), relax = 0.5; end;
-    if( nargin<6 ), mysvd = []; end;
+    if(strcmp(data,'version')), svec = 2.0; return; end%if
 
-    scaledBound = bound * sqrt(1.0 - relax^2);
+    if( (nargin<3) || isempty(type)  ), type  = 'none'; end%if
+    if( (nargin<4) || isempty(relax) ), relax = 0.5; end%if
+    if( nargin<5 ), config = []; end%if
+    if( nargin<6 ), mysvd = []; end%if
 
-    switch(lower(topo))
+    % Precompute common quantities
+    scaledBound = bound * sqrt(1.0 - relax * relax);
+    relaxBound = bound * relax;
 
-        case 'incr' % Incremental HAPOD
+%% Compute HAPOD
 
-            nSets  = size(data,2);
-            nSnapshots  = zeros(nSets,1);
-            nModes = zeros(nSets,1);
-            tNode = zeros(nSets,1);
+    switch(lower(type))
 
-            leafBase = [];
+        case 'incr_1' % Incremental HAPOD (Non-Root Node)
 
-            for nodeIndex = 1:nSets-1
-
-                tId = tic();
-                nSnapshots(nodeIndex) = size(data{nodeIndex},2);
-                leafBound = scaledBound * sqrt(sum(nSnapshots) / (nSets - 1));
-                [leafBase,leafValues] = pod({leafBase,data{nodeIndex}},leafBound,mysvd);
-                leafBase = leafBase.*leafValues;
-                nModes(nodeIndex) = size(leafBase,2);
-                tNode(nodeIndex) = toc(tId);
-            end
-
-            tId = tic();
-            nSnapshots(end) = size(data{end},2);
-            rootBound = bound * relax * sqrt(sum(nSnapshots));
-            [svec,sval] = pod({leafBase,data{end}},rootBound,mysvd);
-            tNode(nSets) = toc(tId);
-            snfo = struct('nSets',nSets,'nSnapshots',nSnapshots,'nModes',nModes,'tNode',tNode);
-
-        case 'incr_0' % Incremental HAPOD (First Node Only)
-
-            config.nSnapshots = zeros(1,config.nSets);
-            config.nSnapshots(1) = size(data{1},2);
-            config.nModes = zeros(1,config.nSets);
-            config.tNode = zeros(1,config.nSets);
-
-            tId = tic();
-            leafBound = scaledBound * sqrt(config.nSnapshots(1) / (config.nSets - 1));
-            [svec,sval] = pod(data,leafBound,mysvd);
-            svec = svec.*sval;
-            config.nModes(1) = size(svec,2);
-            config.tNode(1) = toc(tId);
-            snfo = config;
-
-        case 'incr_1' % Incremental HAPOD (One Node Only)
-
-            tId = tic();
-            config.nSnapshots(config.nodeIndex) = size(data{1},2) + size(data{2},2) - config.nModes(config.nodeIndex-1);
-            leafBound = scaledBound * sqrt(sum(config.nSnapshots) / (config.nSets - 1));
-            [svec,sval] = pod(data,leafBound,mysvd);
-            svec = svec.*sval;
-            config.nModes(config.nodeIndex) = size(svec,2);
-            config.tNode(config.nodeIndex) = toc(tId);
-            snfo = config;
+            [svec,sval,snfo] = incr_1(data,scaledBound,config,mysvd);
 
         case 'incr_r' % Incremental HAPOD (Root Node Only)
 
-            tId = tic();
-            config.nSnapshots(config.nodeIndex) = size(data{1},2) + size(data{2},2) - config.nModes(config.nodeIndex-1);
-            rootBound = bound * relax * sqrt(sum(config.nSnapshots));
-            [svec,sval] = pod(data,rootBound,mysvd);
-            config.nModes(config.nodeIndex) = size(svec,2);
-            config.tNode(config.nodeIndex) = toc(tId);
-            snfo = config;
+            [svec,sval,snfo] = incr_r(data,relaxBound,config,mysvd);
 
-        case 'dist' % Distributed HAPOD
+        case 'incr'   % Incremental HAPOD (Complete)
 
-            nSets  = size(data,2);
-            nSnapshots  = zeros(nSets,1);
-            nModes = zeros(nSets,1);
-            tNode = zeros(nSets,1);
+            svec = [];
+            snfo.nLevels = size(data,2);
 
-            leafBases = cell(1,nSets);
+            for k = 1:size(data,2)-1
 
-            for nodeIndex = 1:nSets
+                [svec,sval,snfo] = incr_1({data{k},svec},scaledBound,snfo,mysvd);
+            end%for
 
-                tId = tic();
-                nSnapshots(nodeIndex) = size(data{nodeIndex},2);
-                leafBound = sqrt(nSnapshots(nodeIndex)) * scaledBound;
-                [leafBases{nodeIndex},leafValues] = pod(data(nodeIndex),leafBound,mysvd);
-                leafBases{nodeIndex} = leafBases{nodeIndex}.*leafValues;
-                nModes(nodeIndex) = size(leafBases{nodeIndex},2);
-                tNode(nodeIndex) = toc(tId);
-            end
+            [svec,sval,snfo] = incr_r({data{end},svec},relaxBound,snfo,mysvd);
 
-            tId = tic();
-            rootBound = sqrt(sum(nSnapshots)) * relax * bound;
-            [svec,sval] = pod(leafBases,rootBound,mysvd);
-            tNode(nSets+1) = toc(tId);
-            snfo = struct('nSets',nSets,'nSnapshots',nSnapshots,'nModes',nModes,'tNode',tNode);
+        case 'dist_1' % Distributed HAPOD (Non-Root Node)
 
-        case 'dist_1' % Distributed HAPOD (One Node Only)
-
-            if(iscell(data))
-                config.nSnapshots = size(data{1},2);
-            else
-                config.nSnapshots = size(data,2);
-            end
-
-            tId = tic();
-            leafBound = sqrt(config.nSnapshots) * scaledBound;
-            [svec,sval] = pod(data,leafBound,mysvd);
-            svec = svec.*sval;
-            config.nModes = size(svec,2);
-            config.tNode = toc(tId);
-            snfo = config;
+            [svec,sval,snfo] = dist_1(data,scaledBound,config,mysvd);
 
         case 'dist_r' % Distributed HAPOD (Root Node Only)
 
+            [svec,sval,snfo] = dist_r(data,relaxBound,config,mysvd);
+
+        case 'dist'   % Distributed HAPOD (Complete)
+
+            for k = 1:size(data,2)
+
+                [svec{k},sval,snfo{k}] = dist_1(data(k),scaledBound,config,mysvd);
+            end%for
+
+            [svec,sval,snfo] = dist_r(svec,relaxBound,snfo,mysvd);
+
+        otherwise % Standard POD
+
             tId = tic();
-            rootBound = sqrt(sum(config.nSnapshots)) * relax * bound;
-            [svec,sval] = pod(data,rootBound,mysvd);
-            tNode = toc(tId);
-            snfo = struct('nSnapshots',[config.nSnapshots],'nModes',[config.nModes],'tNode',tNode + [config.tNode]);
-
-        case 'none' % Standard POD
-
-            nSets  = size(data,2);
-            nSnapshots  = zeros(nSets,1);
-
-            tId = tic();
-            for nodeIndex = 1:nSets
-                nSnapshots(nodeIndex) = size(data{nodeIndex},2);
-            end
-            [svec,sval] = pod(data,sqrt(sum(nSnapshots)) * bound,mysvd);
-            tNode = toc(tId);
-            nModes = size(svec,2);
-            snfo = struct('nSets',nSets,'nSnapshots',nSnapshots,'nModes',nModes,'tNode',tNode);
-
-        otherwise
-
-            error('hapod: unknown HAPOD topology!');
-    end
+            snfo.nSnapshots = sum(cellfun(@(M) size(M,2),data));
+            snfo.nLevels = 1;
+            normBound = sqrt(snfo.nSnapshots) * bound;
+            [svec,sval] = pod(data,normBound,mysvd);
+            snfo.nModes = size(svec,2);
+            snfo.tNode = toc(tId);
+    end%switch
 end
 
+% LOCAL FUNCTION: incr_1
+function [svec,sval,config] = incr_1(data,scaledBound,config,mysvd)
+% summary: Incremental HAPOD: Non-root node only
+
+    if(not(isfield(config,'nSnapshots')))
+        config.nSnapshots{1} = size(data{1},2);
+    else
+        config.nSnapshots{end+1} = size(data{1},2) + size(data{2},2) - config.nModes{end};
+    end%if
+
+    tId = tic();
+    nodeBound = scaledBound * sqrt(sum(cell2mat(config.nSnapshots)) / (config.nLevels - 1));
+    [svec,sval] = pod(data,nodeBound,mysvd);
+    svec = bsxfun(@times,svec,sval);
+
+    if(not(isfield(config,'nModes')))
+        config.nModes{1} = size(svec,2);
+        config.tNode{1} = toc(tId);
+    else
+        config.nModes{end+1} = size(svec,2);
+        config.tNode{end+1} = toc(tId);
+    end%if
+end
+
+% LOCAL FUNCTION: incr_r
+function [svec,sval,config] = incr_r(data,relaxBound,config,mysvd)
+% summary: Incremental HAPOD: Root node only
+
+    tId = tic();
+    config.nSnapshots{end+1} = size(data{1},2) + size(data{2},2) - config.nModes{end};
+    rootBound = sqrt(sum(cell2mat(config.nSnapshots))) * relaxBound;
+    [svec,sval] = pod(data,rootBound,mysvd);
+    config.nModes{end+1} = size(svec,2);
+    config.tNode{end+1} = toc(tId);
+end
+
+% LOCAL FUNCTION: dist_1
+function [svec,sval,snfo] = dist_1(data,scaledBound,config,mysvd)
+% summary: Distributed HAPOD: Non-root node only
+
+    if(iscell(data))
+        snfo.nSnapshots = size(data{1},2);
+    else
+        snfo.nSnapshots = size(data,2);
+    end%if
+
+    tId = tic();
+    nodeBound = sqrt(snfo.nSnapshots) * scaledBound;
+    [svec,sval] = pod(data,nodeBound,mysvd);
+    svec = bsxfun(@times,svec,sval);
+    snfo.nLevels = 2;
+    snfo.nModes = size(svec,2);
+    snfo.tNode = toc(tId);
+end
+
+% LOCAL FUNCTION: dist_r
+function [svec,sval,snfo] = dist_r(data,relaxBound,config,mysvd)
+% summary: Distributed HAPOD: Root node only
+
+    tId = tic();
+    snfo.nSnapshots = cellfun(@(c) {c.nSnapshots},config);
+    snfo.nSnapshots{end+1} = sum(cell2mat(snfo.nSnapshots));
+    rootBound = sqrt(snfo.nSnapshots{end}) * relaxBound;
+    [svec,sval] = pod(data,rootBound,mysvd);
+    snfo.nLevels = 2;
+    snfo.nModes = [cellfun(@(c) {c.nModes},config),size(svec,2)];
+    snfo.tNode = [cellfun(@(c) {c.tNode},config),toc(tId)];
+end
+
+% LOCAL FUNCTION: pod
 function [svec,sval] = pod(data,bound,mysvd)
+% summary: Generic proper orthogonal decomposition
 
     X = cell2mat(data);
 
-    if(isempty(mysvd))
+    if(isempty(mysvd))          % Plain economic (rank-revealing) SVD
         [U,D,V] = svd(X,'econ');
-    else
+        D = diag(D);
+    elseif(strcmp(mysvd,'mos')) % Method of snapshots
+        [E,V] = eig(X'*X,'vector');
+        [D,I] = sort(sqrt(abs(V)),'descend');
+        U = X * bsxfun(@rdivide,E(:,I),D');
+    else                        % Custom SVD
         [U,D,V] = mysvd(X);
-    end
+        if(size(D,2) > 1), D = diag(D); end%if
+    end%if
 
-    D = diag(D);
     d = flipud(cumsum(flipud(D.^2)));
 
-    K = find(d <= bound^2,1);
-    if(isempty(K)), K = size(X,2) + 1; end;
+    K = find(d <= (bound*bound),1);
+    if(isempty(K)), K = size(X,2) + 1; end%if
     sval = D(1:K-1)';
     svec = U(:,1:K-1);
 end

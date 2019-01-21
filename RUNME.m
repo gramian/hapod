@@ -1,101 +1,109 @@
 function RUNME()
-%%% project: hapod - Hierarchical Approximate POD ( http://git.io/hapod )
-%%% version: 1.3 ( 2018-02-09 )
+%%% project: hapod - Hierarchical Approximate POD ( https://git.io/hapod )
+%%% version: 2.0 ( 2019-01-21 )
 %%% authors: C. Himpe ( 0000-0003-2194-6754 ), S. Rave ( 0000-0003-0439-7212 )
 %%% license: BSD 2-Clause License ( opensource.org/licenses/BSD-2-Clause )
 %%% summary: basic test for incremental HAPOD and distributed HAPOD
-%
 
 %% Generate test data
 
-    randn('seed',1009);
-    n = 16;
-    [a,b,c] = svd(randn(n*n,n*n));
-    s = a*diag(logspace(0,-16,n*n))*b';
-    S = mat2cell(s,size(s,1),n*ones(n,1));
-
-    w = 0.1;
-    E = 1e-8;
+    randn('seed',1009);			   % seed random number generator
+    n = 16;				   % set number of partitions
+    N = n*n;				   % set test problem size
+    [a,b,c] = svd(randn(N,N));		   % compute SVD of normal random matrix
+    s = a*diag(logspace(0,-16,N))*b';	   % reassign singular values
+    S = mat2cell(s,size(s,1),n*ones(n,1)); % split data matrix into partitions
+    w = 0.1;				   % relaxation parameter omega
+    E = 1e-8;				   % target mean L2 projection error
+    disp(' ');
 
     % Compute default POD
+    disp('REFERENCE POD:');
     [U,D,C] = hapod(S,E,'none');
-    PRESCRIBED_MEAN_L2 = E
-    POD_MEAN_L2 = norm(s-U*U'*s,'fro')/sqrt(n*n)
-    disp('');
+    [ug,dg,cg] = hapod(S,E*w,'none');
+    prescribed_mean_L2 = E
+    mean_L2 = norm(s-U*U'*s,'fro')/sqrt(N)
+    global_mode_bound = size(ug,2)
+    disp(' ');
 
 %% Incremental HAPOD
 
-    % Compute global mode bound POD for incremental HAPOD
-    [ug,dg,cg] = hapod(S,E*w,'none');
-    iHAPOD_GLOBAL_MODE_BOUND = size(ug,2)
-
-    % Compute local mode bound POD for incremental HAPOD
-    [ul,dl,cl] = hapod(S,E*sqrt(1.0-w^2)/sqrt(n*n-1),'none');
-    iHAPOD_LOCAL_MODE_BOUND = size(ul,2)
-    disp('');
-
-    % Test full incremental HAPOD
+    % Test bulk incremental HAPOD
+    disp('INCREMENTAL HAPOD (BULK):');
     [U,D,C] = hapod(S,E,'incr',w);
-    iHAPOD_MEAN_L2 = norm(s-U*U'*s,'fro')/sqrt(n*n)
-    iHAPOD_MODES = size(U,2)
-    iHAPOD_MAX_MODES = max(C.nModes)
-    disp('');
+    mean_L2 = norm(s-U*U'*s,'fro')/sqrt(N)
+    num_global_modes = size(U,2)
+    max_local_modes = max(cell2mat(C.nModes(1:end-1)))
+    disp(' ');
 
-    % Test partial incremental HAPOD
-    c1.nSets = n;
-    [u1,d1,c1] = hapod(S(1),E,'incr_0',w,c1);
+    % Test chunk incremental HAPOD
+    disp('INCREMENTAL HAPOD (CHUNK):');
+    u1 = [];
+    c1 = struct('nLevels',n);
 
-    for k=2:n-1
+    for k=1:n-1
 
-        c1.nodeIndex = k;
         [u1,d1,c1] = hapod({S{k},u1},E,'incr_1',w,c1);
     end
 
-    c1.nodeIndex = n;
-    [u1,d1,c1] = hapod({S{n},u1},E,'incr_r',w,c1);
+    [U,D,C] = hapod({S{n},u1},E,'incr_r',w,c1);
 
-    iHAPOD_MEAN_L2 = norm(s-U*U'*s,'fro')/sqrt(n*n)
-    iHAPOD_MODES = size(U,2)
-    iHAPOD_MAX_MODES = max(C.nModes)
-    disp('');
+    mean_L2 = norm(s-U*U'*s,'fro')/sqrt(N)
+    num_global_modes = size(U,2)
+    max_local_modes = max(cell2mat(C.nModes(1:end-1)))
+    disp(' ');
 
 %% Distributed HAPOD
 
-    % Compute global mode bound POD for incremental HAPOD
-    [ug,dg,cg] = hapod(S,E*w,'none');
-    dHAPOD_GLOBAL_MODE_BOUND = size(ug,2)
-
-    % Compute local mode bound POD for incremental HAPOD
-    [ul,dl,cl] = hapod(S,E*sqrt(1.0-w^2),'none');
-    dHAPOD_LOCAL_MODE_BOUND = size(ul,2)
-    disp('');
-
-    % Test full distributed HAPOD
+    % Test bulk distributed HAPOD
+    disp('DISTRIBUTED HAPOD (BULK):');
     [U,D,C] = hapod(S,E,'dist',w);
-    dHAPOD_MEAN_L2 = norm(s-U*U'*s,'fro')/sqrt(n*n)
-    dHAPOD_MODES = size(U,2)
-    dHAPOD_MAX_MODES = max(C.nModes)
-    disp('');
+    mean_L2 = norm(s-U*U'*s,'fro')/sqrt(N)
+    num_global_modes = size(U,2)
+    max_local_modes = max(cell2mat(C.nModes(1:end-1)))
+    disp(' ');
 
-    % Test partial distributed HAPOD 
-    u2t = cell(1,n);
-    d2t = cell(1,n);
+    % Test chunk distributed HAPOD
+    disp('DISTRIBUTED HAPOD (CHUNK):');
+    u2 = cell(1,n);
 
-    nSnapshots = 0;
-    nModes = 0;
-    tNode = 0;
+    for k = 1:n
 
-    for k=1:n
- 
-        [u2t{k},d2t{k},c2t] = hapod(S(k),E,'dist_1',w);
-        nSnapshots = nSnapshots + c2t.nSnapshots;
-        nModes = max(nModes,c2t.nModes);
-        tNode = tNode + c2t.tNode;
+        [u2{k},d2,c2{k}] = hapod(S(k),E,'dist_1',w);
     end
 
-    [u2,d2,c2] = hapod(u2t,E,'dist_r',w,struct('nSnapshots',nSnapshots,'nModes',nModes,'tNode',tNode));
+    [U,D,C] = hapod(u2,E,'dist_r',w,c2);
 
-    dHAPOD_MEAN_L2 = norm(s-u2*u2'*s,'fro')./sqrt(n*n)
-    dHAPOD_MODES = size(u2,2)
-    dHAPOD_MAX_MODES = max(c2.nModes)
+    mean_L2 = norm(s-U*U'*s,'fro')./sqrt(N)
+    num_global_modes = size(U,2)
+    max_local_modes = max(cell2mat(C.nModes(1:end-1)))
+    disp(' ');
+
+%% Distributed-of-Incremental HAPOD
+
+    % Test dist-of-inc HAPOD
+    disp('DIST-OF-INC HAPOD (CHUNK):');
+    strand = {[1:ceil(n/2)],ceil(n/2)+1:n};
+    M = numel(strand);
+    u3 = repmat({[]},1,M);
+    c3 = repmat({struct('nLevels',n+1)},1,M);
+
+    for m = 1:M
+
+        for k = strand{m}
+
+            [u3{m},d3,c3{m}] = hapod({S{k},u3{m}},E,'incr_1',w,c3{m});
+        end
+
+        c3{m}.nSnapshots =  sum([c3{m}.nSnapshots{:}]);
+        c3{m}.nModes = max([c3{m}.nModes{:}]);
+        c3{m}.tNode = sum([c3{m}.tNode{:}]);
+    end
+
+    [U,D,C] = hapod(u3,E,'dist_r',w,c3);
+
+    mean_L2 = norm(s-U*U'*s,'fro')./sqrt(N)
+    num_global_modes = size(U,2)
+    max_local_modes = max(cell2mat(C.nModes(1:end-1)))
+    disp(' ');
 end
