@@ -16,7 +16,7 @@ HAPOD - Hierarchical Approximate Proper Orthogonal Decomposition
 * Empirical Eigenfunctions
 * Karhunen-Loeve Decomposition
 * Dimension Reduction
-* Model Reduction | Model Order Redction
+* Model Reduction | Model Order Reduction
 
 ## Features
 
