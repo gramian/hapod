@@ -3,7 +3,7 @@ HAPOD - Hierarchical Approximate Proper Orthogonal Decomposition
 
 * HAPOD - Hierarchical Approximate POD
 * version: 3.0 (2020-01-24)
-* by: C. Himpe (0000-0003-2194-6754), S. (0000-0003-0439-7212)
+* by: C. Himpe (0000-0003-2194-6754), S. Rave (0000-0003-0439-7212)
 * under: BSD 2-Clause License (opensource.org/licenses/BSD-2-Clause)
 * summary: Fast distributed or incremental POD computation.
 
