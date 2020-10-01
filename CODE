@@ -1,8 +1,8 @@
 # code.ini
 name: Hierarchical Approximate Proper Orthogonal Decomposition
 shortname: hapod
-version: 3.0
-release-date: 2020-01-24
+version: 3.1
+release-date: 2020-10-01
 author: Christian Himpe, Stephan Rave
 orcid: 0000-0003-2194-6754, 0000-0003-0439-7212
 topic: Science, Mathematics, Dimension Reduction
@@ -12,7 +12,7 @@ license-type: open-source
 repository: github.com/gramian/hapod
 repository-type: git
 language: Matlab
-dependencies: Octave >=4.2, Matlab >=2013b
+dependencies: Octave >=4.0, Matlab >=2013b
 systems: Linux, Windows
 website: git.io/hapod
 keywords: Singular Value Decomposition, Principal Component Analysis, Proper Orthogonal Decomposition, Dimension Reduction, Data Compression

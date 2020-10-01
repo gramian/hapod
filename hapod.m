@@ -1,6 +1,6 @@
 function [svec,sval,meta] = hapod(data,bound,topo,relax,meta,depth,mysvd)
 %%% project: hapod - Hierarchical Approximate POD ( https://git.io/hapod )
-%%% version: 3.0 (2020-01-24)
+%%% version: 3.1 (2020-10-01)
 %%% authors: C. Himpe (0000-0003-2194-6754), S. Rave (0000-0003-0439-7212)
 %%% license: BSD 2-Clause License (opensource.org/licenses/BSD-2-Clause)
 %%% summary: Fast distributed or incremental POD computation.
@@ -11,7 +11,7 @@ function [svec,sval,meta] = hapod(data,bound,topo,relax,meta,depth,mysvd)
 % DESCRIPTION:
 %  The hierarchical approximate proper orthogonal decomposition (HAPOD) is a
 %  tree-based algorithm to compute low-rank representations of column-wise
-%  partitioned data matrices, of which the special cases of incremental HAPOD 
+%  partitioned data matrices, of which the special cases of incremental HAPOD
 %  and distributed HAPOD are implemented. The HAPOD is an error-driven POD
 %  method with low communication for distributed memory systems as well as
 %  for memory-limited shared memory systems.
@@ -55,7 +55,7 @@ function [svec,sval,meta] = hapod(data,bound,topo,relax,meta,depth,mysvd)
 %  incr_1 and dist_1 should be used for the child nodes of the associated HAPOD
 %  tree, while the topologies: incr_r and dist_r should be used for the root
 %  node. The returned information structure (or a cell-array thereof) can be
-%  passed to the parent nodes in the associated HAPOD tree. 
+%  passed to the parent nodes in the associated HAPOD tree.
 %
 % CITE AS:
 %  C. Himpe, T. Leibner and S. Rave.
@@ -72,7 +72,7 @@ function [svec,sval,meta] = hapod(data,bound,topo,relax,meta,depth,mysvd)
 %
 % Further information: https://git.io/hapod
 
-    if strcmp(data,'version'), svec = 3.0; return; end%if
+    if strcmp(data,'version'), svec = 3.1; return; end%if
 
     % Default arguments
     if nargin<3 || isempty(topo),  topo  = 'none'; end%if
@@ -93,25 +93,13 @@ function [svec,sval,meta] = hapod(data,bound,topo,relax,meta,depth,mysvd)
     end%if
 
     % Argument validation
-    if not(isnumeric(bound) && isscalar(bound) && bound>0)
+    assert(isnumeric(bound) && isscalar(bound) && bound>0,'hapod: bad bound!');
 
-        error('hapod: bad bound!');
-    end%if
- 
-    if not(isnumeric(relax) && isscalar(relax) && relax>0 && relax<=1)
+    assert(isnumeric(relax) && isscalar(relax) && relax>0 && relax<=1,'hapod: bad relax!');
 
-        error('hapod: bad relax!');
-    end%if
+    assert(not(strcmp(topo,'incr_1')) || isscalar(depth) || depth<2 || (mod(depth,1)==0),'hapod: bad depth!');
 
-    if strcmp(topo,'incr_1') && (not(isscalar(depth)) || not(mod(depth,1)==0) || depth<2)
-
-        error('hapod: bad depth!');
-    end%if
-
-    if any(strcmp(topo,{'incr_r','dist_r'})) && isempty(meta)
-
-        error('hapod: missing meta!');
-    end%if
+    assert(not(strcmp(topo,'incr_r')) || not(strcmp(topo,'dist_r')) || isempty(meta),'hapod: missing meta!');
 
     % Precompute common quantities
     nodeBound = bound * sqrt(1.0 - relax^2);
@@ -160,7 +148,7 @@ function [svec,sval,meta] = hapod(data,bound,topo,relax,meta,depth,mysvd)
 
             [svec,sval,meta] = dist_r(svec,rootBound,meta,mysvd);
 
-        case 'none' % Standard POD
+        case 'none'   % Standard POD
 
             tId = tic();
             meta.nSnapshots = sum(cellfun(@(M) size(M,2),data));
@@ -276,3 +264,4 @@ function [U,d] = mos(X)
     [d,L] = sort(sqrt(abs(diag(V))),'descend');
     U = X * bsxfun(@rdivide,E(:,L),d');
 end
+

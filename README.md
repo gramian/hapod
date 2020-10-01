@@ -2,7 +2,7 @@ HAPOD - Hierarchical Approximate Proper Orthogonal Decomposition
 ================================================================
 
 * HAPOD - Hierarchical Approximate POD
-* version: 3.0 (2020-01-24)
+* version: 3.1 (2020-10-01)
 * by: C. Himpe (0000-0003-2194-6754), S. Rave (0000-0003-0439-7212)
 * under: BSD 2-Clause License (opensource.org/licenses/BSD-2-Clause)
 * summary: Fast distributed or incremental POD computation.
@@ -11,6 +11,7 @@ HAPOD - Hierarchical Approximate Proper Orthogonal Decomposition
 
 * Proper Orthogonal Decomposition (POD)
 * Singular Value Decomposition (SVD)
+* Principal Axis Transformation (PAT)
 * Principal Component Analysis (PCA)
 * Empirical Orthogonal Functions (EOF)
 * Karhunen-Loeve Transformation (KLT)
@@ -22,10 +23,12 @@ HAPOD - Hierarchical Approximate Proper Orthogonal Decomposition
 * Model Reduction
 * Low-Rank Approximation
 * Data Compression
+* Unsupervised Learning
 
 ## Features
 
 * Error-driven
+* Rigorous bounds
 * Single pass (each data vector is needed only once)
 * Column-wise data partition
 * Custom SVD backends
@@ -33,19 +36,19 @@ HAPOD - Hierarchical Approximate Proper Orthogonal Decomposition
 ## Functionality
 
 * Standard POD
-* Incremental HAPOD -> for memory-limited environments: single-board-computers
-* Distributed HAPOD -> for distributd memory environments: super-computers
+* Incremental HAPOD -> for memory-limited environments, e.g. single-board-computers
+* Distributed HAPOD -> for distributd memory environments, e.g. super-computers
 * Distributed-of-Incremental HAPOD
 
 ## Algorithm
 
-C. Himpe, T. Leibner and S. Rave.
-"[Hierarchical Approximate Proper Orthogonal Decomposition](http://hdl.handle.net/21.11116/0000-0002-5342-6)".
+C. Himpe, T. Leibner, S. Rave:
+"[Hierarchical Approximate Proper Orthogonal Decomposition](http://hdl.handle.net/21.11116/0000-0002-5342-6)";
 SIAM Journal on Scientific Computing, 40(5): A3267--A3292, 2018.
 
 ## Compatibility
 
-* GNU Octave >= 4.2
+* GNU Octave >= 4.0
 * Mathworks MATLAB >= 2013b
 
 ## Basic Usage
@@ -108,7 +111,7 @@ sub-tree:
 
 The argument `meta` only needs to be passed for topology argument `incr_r`,
 `dist_r` and `incr_1` unless it is first leaf. This means especially the user
-never has to create such a structure, as if it is required it is given as a
+never has to create such a structure, since if it is required it is given as a
 previous return value.
 
 ## Custom SVD
@@ -120,7 +123,7 @@ handle with the following signature:
 [U,d] = mysvd(X)
 ```
 
-for a data matrix `X`, and return left singular vectors in matrix `U` and
+for a data matrix `X`, and returning left singular vectors in matrix `U` and
 singular values in column vector `d`. By default (or `mysvd` = `eco`) a standard
 rank-revealing SVD is used. Additionally, by `mysvd` = `mos` the method of
 snapshots can be selected.
@@ -138,30 +141,35 @@ as a template.
 
 ## Cite As
 
-C. Himpe, T. Leibner and S. Rave.
-"[Hierarchical Approximate Proper Orthogonal Decomposition](https://doi.org/10.1137/16M1085413)".
+C. Himpe, T. Leibner and S. Rave:
+"[Hierarchical Approximate Proper Orthogonal Decomposition](https://doi.org/10.1137/16M1085413)";
 SIAM Journal on Scientific Computing, 40(5): A3267--A3292, 2018.
 
 ## Used In
 
-* P. Benner, C. Himpe.
-"[Cross-Gramian-Based Dominant Subspaces](https://doi.org/10.1007/s10444-019-09724-7)".
+* P. Benner, C. Himpe:
+"[Cross-Gramian-Based Dominant Subspaces](https://doi.org/10.1007/s10444-019-09724-7)";
 Advances in Computational Mathematics, 45(5): 2533--2553, 2019.
 
-* C. Himpe, T. Leibner, S. Rave, J. Saak.
-"[Fast Low-Rank Empirical Cross Gramians](https://doi.org/10.1002/pamm.201710388)".
-Proceedings in Applied Mathematics and Mechanics, 17: 841--842, 2017.
+* B.J. Beach:
+"[An Implementation-Based Exploration of HAPOD: Hierarchical Approximate Proper Orthogonal Decomposition](http://hdl.handle.net/10919/81938)";
+Virgina Tech, Master Thesis, 2018.
 
-* C. Himpe, T. Leibner, S. Rave.
-"[Comprehensive Memory-Bound Simulations on Single Board Computers](https://doi.org/10.5281/zenodo.814497)".
-Extended Abstract, 2nd Conference on Power Aware Computing (PACO), 2017.
+* C. Himpe, T. Leibner, S. Rave, J. Saak:
+"[Fast Low-Rank Empirical Cross Gramians](https://doi.org/10.1002/pamm.201710388)";
+Proceedings in Applied Mathematics and Mechanics, 17: 841--842, 2017.
 
 ## See Also
 
-* C. Himpe, T. Leibner, S. Rave.
-"[HAPOD - Fast, Simple and Reliable Distributed POD Computation](https://doi.org/10.11128/arep.55.a55283)".
+* C. Himpe, T. Leibner, S. Rave:
+"[HAPOD - Fast, Simple and Reliable Distributed POD Computation](https://doi.org/10.11128/arep.55.a55283)";
 ARGESIM Report 55 (MATHMOD 2018 Volume): 119--120, 2018.
+
+* C. Himpe, T. Leibner, S. Rave:
+"[Comprehensive Memory-Bound Simulations on Single Board Computers](https://doi.org/10.5281/zenodo.814497)";
+Extended Abstract, 2nd Conference on Power Aware Computing (PACO), 2017.
 
 * C. Himpe and S. Rave.
 "[HAPOD - Hierarchical Approximate POD](https://himpe.science/poster/rave16_morml.pdf)".
 Data-Driven Model Order Reduction and Machine Learning (MORML), 2016.
+

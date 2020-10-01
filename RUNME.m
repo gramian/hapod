@@ -1,23 +1,23 @@
 function RUNME()
 %%% project: hapod - Hierarchical Approximate POD ( https://git.io/hapod )
-%%% version: 3.0 (2020-01-24)
+%%% version: 3.1 (2020-10-01)
 %%% authors: C. Himpe (0000-0003-2194-6754), S. Rave (0000-0003-0439-7212)
 %%% license: BSD 2-Clause License (opensource.org/licenses/BSD-2-Clause)
 %%% summary: Basic tests for incremental HAPOD and distributed HAPOD
 
 %% Generate test data
 
-    randn('seed',1009);			   % seed random number generator
-    n = 16;				   % set number of partitions
-    N = n*n;				   % set test problem size
-    [a,~,c] = svd(randn(N,N));		   % compute SVD of normal random matrix
-    b = logspace(0,-16,N)';		   % artificial singular values
-    s = a*diag(b)*c';	 		   % reassign singular values
-    S = mat2cell(s,size(s,1),n*ones(n,1)); % split data matrix into partitions
-    w = 0.5;				   % relaxation parameter omega
-    E = sqrt(eps);			   % target mean L2 projection error
+    randn('seed',1009);			% seed random number generator
+    n = 32;					% set number of partitions
+    N = n*n;					% set test problem size
+    [a,~,c] = svd(randn(N,N));			% compute SVD of random matrix
+    b = logspace(0,-16,N)';			% artificial singular values
+    s = a*diag(b)*c';	 			% reassign singular values
+    S = mat2cell(s,size(s,1),n*ones(n,1));	% split data into partitions
+    w = 0.5;					% relaxation parameter omega
+    E = sqrt(eps);				% target mean L2 error
 
-    meanl2 = @(U) norm(s-U*(U'*s),'fro') / sqrt(N); % tested mean L2 error
+    meanl2 = @(U) norm(s-U*(U'*s),'fro') / sqrt(N);	% tested mean L2 error
 
     disp(' ');
     HAPOD_VERSION = hapod('version')
@@ -42,7 +42,7 @@ function RUNME()
     disp(' ');
 
     % Determine mode bound
-    [Uloc,~,~] = hapod(S,E*w,'none');
+    [Uloc,~,~] = hapod(S,E*sqrt(1-w^2)/sqrt(n-1),'none');
     local_mode_bound = size(Uloc,2)
     disp(' ');
 
