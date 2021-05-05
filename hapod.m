@@ -1,6 +1,6 @@
 function [svec,sval,meta] = hapod(data,bound,topo,relax,meta,depth,mysvd)
 %%% project: hapod - Hierarchical Approximate POD ( https://git.io/hapod )
-%%% version: 3.1 (2020-10-01)
+%%% version: 3.2 (2021-05-05)
 %%% authors: C. Himpe (0000-0003-2194-6754), S. Rave (0000-0003-0439-7212)
 %%% license: BSD 2-Clause License (opensource.org/licenses/BSD-2-Clause)
 %%% summary: Fast distributed or incremental POD computation.
@@ -58,7 +58,7 @@ function [svec,sval,meta] = hapod(data,bound,topo,relax,meta,depth,mysvd)
 %  passed to the parent nodes in the associated HAPOD tree.
 %
 % CITE AS:
-%  C. Himpe, T. Leibner and S. Rave.
+%  C. Himpe, T. Leibner, S. Rave:
 %  "Hierarchical Approximate Proper Orthogonal Decomposition".
 %  SIAM Journal on Scientific Computing, 40(5): A3267--A3292, 2018.
 %
@@ -72,7 +72,7 @@ function [svec,sval,meta] = hapod(data,bound,topo,relax,meta,depth,mysvd)
 %
 % Further information: https://git.io/hapod
 
-    if strcmp(data,'version'), svec = 3.1; return; end%if
+    if strcmp(data,'version'), svec = 3.2; return; end%if
 
     % Default arguments
     if nargin<3 || isempty(topo),  topo  = 'none'; end%if

@@ -2,10 +2,18 @@ HAPOD - Hierarchical Approximate Proper Orthogonal Decomposition
 ================================================================
 
 * HAPOD - Hierarchical Approximate POD
-* version: 3.1 (2020-10-01)
+* version: 3.2 (2021-05-05)
 * by: C. Himpe (0000-0003-2194-6754), S. Rave (0000-0003-0439-7212)
 * under: BSD 2-Clause License (opensource.org/licenses/BSD-2-Clause)
 * summary: Fast distributed or incremental POD computation.
+
+## About
+
+The HAPOD is an algorithm to compute the POD (left singular vectors, and
+singular values of a matrix) hierarchically for (column-wise partitioned)
+large-scale matrices, allowing to balance accuracy with performance. As a
+POD-of-PODs method, the HAPOD can be parallelized and further accelerated by
+user supplied SVD implementations.
 
 ## Scope
 
@@ -14,8 +22,8 @@ HAPOD - Hierarchical Approximate Proper Orthogonal Decomposition
 * Principal Axis Transformation (PAT)
 * Principal Component Analysis (PCA)
 * Empirical Orthogonal Functions (EOF)
-* Karhunen-Loeve Transformation (KLT)
 * Empirical Eigenfunctions (EEF)
+* Karhunen-Loeve Transformation (KLT)
 
 ## Applications
 
@@ -30,7 +38,7 @@ HAPOD - Hierarchical Approximate Proper Orthogonal Decomposition
 * Error-driven
 * Rigorous bounds
 * Single pass (each data vector is needed only once)
-* Column-wise data partition
+* Column-wise data partitions (inducing parallelizability)
 * Custom SVD backends
 
 ## Functionality
@@ -62,7 +70,7 @@ SIAM Journal on Scientific Computing, 40(5): A3267--A3292, 2018.
 * `data`   {cell}  - snapshot data set, partitioned by column (blocks)
 * `bound` {scalar} - mean L_2 projection error bound
 * `topo`  {string} - tree topology (see **Topology**)
-* `relax` {scalar} - relaxation parameter in (0,1] (see **Relaxation**)
+* `relax` {scalar} - relaxation parameter in (0,1) (see **Relaxation**)
 * `depth` {scalar} - total number of levels in tree (only required for `incr_1`)
 * `meta`  {struct} - meta information structure (see **Meta-Information**)
 * `mysvd` {handle} - custom SVD backend (see **Custom SVD**) 
@@ -88,9 +96,9 @@ at the tree's leafs. The following topologies are available:
 
 If all data partitions can be passed as the data argument, the types: `none` 
 (standard POD), `incr`(emental) HAPOD or `dist`(ributed) HAPOD are applicable.
-In case only a single partition is passed, the types: `incr_1` and `dist_1`
-should be used for the child nodes of the associated HAPOD tree, while the
-types: `incr_r` and `dist_r` should be used for the root nodes. The returned
+In case only a single partition is passed at a time, the types: `incr_1` and
+`dist_1` should be used for the child nodes of the associated HAPOD tree, while
+the types: `incr_r` and `dist_r` should be used for the root nodes. The returned
 meta-information structure (or a cell-array thereof) has to be passed to the
 parent node in the associated HAPOD tree. 
 
@@ -105,14 +113,14 @@ computation. The default value is `w = 0.5`.
 The `meta` structure contains the following meta-information of the completed
 sub-tree:
 
-* `nSnapshots` - Number of data columns passed to this hapod and its children.
-* `nModes`     - Number of intermediate modes
-* `tNode`      - Computational time at this hapod's branch
+* `nSnapshots` - Number of data columns passed to this HAPOD and its children.
+* `nModes`     - Number of intermediate modes.
+* `tNode`      - Computational time at this HAPOD's branch.
 
-The argument `meta` only needs to be passed for topology argument `incr_r`,
-`dist_r` and `incr_1` unless it is first leaf. This means especially the user
+The argument `meta` only needs to be passed for topology types `incr_r`,
+`dist_r` and `incr_1`, unless it is first leaf. Especially, this means the user
 never has to create such a structure, since if it is required it is given as a
-previous return value.
+previous HAPOD's return value.
 
 ## Custom SVD
 
@@ -138,6 +146,17 @@ RUNME()
 
 which demonstrates the different implemented HAPOD variants and can be used
 as a template.
+
+### MapReduce
+
+The distributed HAPOD is well suited for the [MapReduce](https://en.wikipedia.org/wiki/MapReduce)
+big data processing model. A basic MapReduce wrapper using the MATLAB (>=2020b)
+[mapreduce](https://www.mathworks.com/help/matlab/ref/mapreduce.html) function
+is provided by:
+
+```
+MAPRED()
+```
 
 ## Cite As
 

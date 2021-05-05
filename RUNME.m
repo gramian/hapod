@@ -1,11 +1,11 @@
 function RUNME()
 %%% project: hapod - Hierarchical Approximate POD ( https://git.io/hapod )
-%%% version: 3.1 (2020-10-01)
+%%% version: 3.2 (2021-05-05)
 %%% authors: C. Himpe (0000-0003-2194-6754), S. Rave (0000-0003-0439-7212)
 %%% license: BSD 2-Clause License (opensource.org/licenses/BSD-2-Clause)
 %%% summary: Basic tests for incremental HAPOD and distributed HAPOD
 
-%% Generate test data
+%% Generate Test Data
 
     randn('seed',1009);			% seed random number generator
     n = 32;					% set number of partitions
