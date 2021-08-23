@@ -1,0 +1,49 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+  - family-names: Himpe
+    given-names: Christian
+    orcid: https://orcid.org/0000-0003-2194-6754
+  - family-names: Rave
+    given-names: Stephan
+    orcid: https://orcid.org/0000-0003-0439-7212
+title: "hapod - Hierarchical Approximate Proper Orthogonal Decomposition"
+commit: 794e83334802058fe78ca78ad806780c65e9be3c 
+url: https://git.io/hapod
+version: 3.2
+date-released: 2021-05-05
+preferred-citation:
+  type: article
+  authors:
+    - family-names: Himpe
+      given-names: Christian
+      orcid: https://orcid.org/0000-0003-2194-6754
+    - family-names: Rave
+      given-names: Stephan
+      orcid: https://orcid.org/0000-0003-0439-7212
+    - family-names: Leibner
+      given-names: Tobias
+      orcid: https://orcid.org/0000-0002-3455-0305
+  doi: 10.1137/16M1085413
+  journal: "SIAM Journal on Scientific Computing"
+  title: "Hierarchical Approximate Proper Orthogonal Decomposition"
+  volume: 40
+  issue: 5
+  start: A3267
+  end: A3292
+  year: 2018
+keywords:
+  - "Proper Orthogonal Decomposition"
+  - "Singular Value Decomposition"
+  - "Principal Axis Transformation"
+  - "Principal Component Analysis"
+  - "Empirical Orthogonal Functions"
+  - "Empirical Eigenfunctions"
+  - "Karhunen-Loeve Transformation"
+  - "Dimension Reduction"
+  - "Model Reduction"
+  - "Model Order Reduction"
+  - "Low-Rank Approximation"
+  - "Data Compression"
+  - "Unsupervised Learning"
+
